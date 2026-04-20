@@ -40,20 +40,33 @@ Gene-Cell Count Matrix → AnnData (.h5ad)
 ##  Repository Structure
 
 ```
-scRNA-seq-pipeline/
-│
-├── 1_preprocessing_10X_galaxy/
-│   └── scRNA-galaxy-files.zip
-│
-├── 2_scanpy_analysis/
-│   └── basic-scrna-tutorial.ipynb
-│
-├── 3_anndata_learning/
-│   ├── anndata1.ipynb
-│   └── anndata2.ipynb
-│
+1_preprocessing_10X_galaxy/
+├── DropletUtils Plot on dataset 14-16].png
+├── DropletUtils _RNA star.zip
+├── MultiQC on dataset 13_ Stats].tabular
+├── RNA STARSolo on dataset 1-6_ Matrix Gene Counts raw].mtx
+├── RNA STARSolo on dataset 1-6_ log].txt
+
+2_scanpy_analysis/
+├── visuals/
+│       ├── dot_plot.png
+│       ├── pca_samples.png
+│       ├── pca_variance_ratio.png
+│       ├── scatter_plot.png
+│       ├── umap.png
+│       ├── umap_4.png
+├── scrna (1).ipynb
+
+3_AnnData/
+├── visuals/
+│       ├── cpm_vs_raw_counts.png
+│       ├── distance_matrix_raw.png
+│       ├── embeddings_plot.png
+│       ├── sorted heatmap.png
+├── Getting_started_with_anndata .ipynb
+├── Getting_started_with_the_anndata_package.ipynb
 ├── README.md
-└── requirements.txt
+├──Requirments.txt
 ```
 
 ---

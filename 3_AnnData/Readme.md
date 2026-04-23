@@ -457,4 +457,4 @@ This means a dataset analyzed in Scanpy can be directly loaded into scVI-tools f
 - [scverse Ecosystem Overview](https://scverse.org/)
 
 
-⬅️ [Back: Scanpy Analysis](../2_scanpy_analysis/README.md) | [🏠 Main README](../README.md)
+

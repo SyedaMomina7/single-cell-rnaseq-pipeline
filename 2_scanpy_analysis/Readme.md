@@ -378,4 +378,3 @@ adata.write('results/adata_clustered.h5ad')
 
 ---
 
-⬅️ [Back: Preprocessing](../1_preprocessing_10X_galaxy/README.md) | [🏠 Main README](../README.md) | ➡️ [Next: AnnData](../3_AnnData/README.md)

@@ -1,268 +1,313 @@
-# End-to-End Single-Cell RNA-Seq Analysis Workflow
+# 🧬 Single-Cell RNA-seq Analysis Pipeline
 
-**Galaxy (10x preprocessing) · Scanpy · AnnData · scverse**
-
----
-
-##  Overview
-
-This repository presents a **comprehensive and reproducible single-cell RNA sequencing (scRNA-seq) workflow**, covering the full pipeline from **raw sequencing reads (FASTQ)** to **biologically meaningful cell clusters and annotations**.
-
-The workflow integrates:
-
-* **Galaxy (GTN)** for upstream preprocessing of raw 10x Genomics data
-* **Scanpy (Python)** for downstream statistical analysis and clustering
-* **AnnData (scverse ecosystem)** for structured data representation and manipulation
-
-This hybrid design reflects **real-world scRNA-seq analysis pipelines**, combining **user-friendly preprocessing** with **flexible computational analysis**.
+> **A structured, reproducible, end-to-end workflow** for single-cell RNA sequencing (scRNA-seq) analysis — from raw 10X Genomics FASTQ data to clustered and annotated cell populations.
 
 ---
 
-##  Workflow Summary
+##  Table of Contents
+
+1. [Project Overview](#-project-overview)
+2. [Pipeline Architecture](#-pipeline-architecture)
+3. [Repository Structure](#-repository-structure)
+4. [Stage Summaries](#-stage-summaries)
+   - [Stage 1 — Preprocessing (Galaxy)](#stage-1--preprocessing-galaxy)
+   - [Stage 2 — Scanpy Analysis (Python)](#stage-2--scanpy-analysis-python)
+   - [Stage 3 — AnnData Exploration](#stage-3--anndata-exploration)
+5. [Key Visual Outputs](#-key-visual-outputs)
+6. [Environment Setup](#-environment-setup)
+7. [How to Run](#-how-to-run)
+8. [Reproducibility & Best Practices](#-reproducibility--best-practices)
+9. [References](#-references)
+10. [Author](#-author)
+
+---
+
+## 🔬 Project Overview
+
+Single-cell RNA sequencing (scRNA-seq) has revolutionized our ability to study **cellular heterogeneity** at an unprecedented resolution. Unlike bulk RNA-seq, which averages gene expression across thousands of cells, scRNA-seq enables profiling of **individual cells** — revealing rare populations, developmental trajectories, and disease-specific signatures.
+
+This pipeline provides a **complete, modular, and reproducible** workflow for scRNA-seq analysis built on industry-standard tools:
+
+| Tool | Role | Purpose |
+|------|------|---------|
+| **Galaxy (GTN)** | Preprocessing | GUI-based alignment and QC — no coding required |
+| **STARsolo** | Alignment | Efficient barcode-aware alignment of 10X FASTQ reads |
+| **DropletUtils** | Cell calling | Distinguishes real cells from empty droplets |
+| **MultiQC** | QC reporting | Comprehensive sequencing quality summary |
+| **Scanpy** | Analysis | Clustering, dimensionality reduction, marker detection |
+| **AnnData** | Data format | Unified, annotatable single-cell data container |
+
+### Why This Pipeline?
+
+-  **Modular** — each stage is independently documented and executable
+-  **Reproducible** — Galaxy workflows + Jupyter notebooks ensure step-by-step replication
+-  **Scalable** — designed around 10X Genomics Chromium data (the industry standard)
+-  **Educational** — detailed explanations at every step for learning and auditing
+- ✅**Best-practice aligned** — follows current community standards from the scverse ecosystem
+
+---
+
+##  Pipeline Architecture
 
 ```
-Raw FASTQ (10x Genomics)
-        ↓
-[Galaxy Preprocessing]
-(Barcode extraction, alignment, UMI counting)
-        ↓
-Gene-Cell Count Matrix → AnnData (.h5ad)
-        ↓
-[Scanpy Analysis]
-(QC → Normalization → HVG → PCA → UMAP → Clustering)
-        ↓
-[AnnData Exploration]
-(Data structure, metadata handling, annotation)
+Raw FASTQ Files (10X Genomics Paired-End)
+        │
+        ▼
+┌─────────────────────────────┐
+│  STAGE 1: PREPROCESSING     │  ← Galaxy (GTN)
+│  • STARsolo Alignment        │
+│  • DropletUtils Cell Calling │
+│  • MultiQC Quality Control   │
+│  • Count Matrix Generation   │
+└────────────┬────────────────┘
+             │  Gene-Cell Count Matrix (.mtx / .h5ad)
+             ▼
+┌─────────────────────────────┐
+│  STAGE 2: SCANPY ANALYSIS   │  ← Python / Jupyter
+│  • Cell-level QC Filtering  │
+│  • Normalization & Scaling  │
+│  • PCA (Dimensionality Red.)│
+│  • Neighbor Graph + UMAP    │
+│  • Leiden Clustering        │
+│  • Marker Gene Detection    │
+└────────────┬────────────────┘
+             │  Clustered AnnData (.h5ad)
+             ▼
+┌─────────────────────────────┐
+│  STAGE 3: ANNDATA WORKFLOWS │  ← Python / Jupyter
+│  • Data Structure Exploration│
+│  • Metadata Annotation       │
+│  • Embedding Visualization   │
+│  • Cell Type Assignment      │
+└─────────────────────────────┘
+             │
+             ▼
+   Annotated Cell Populations
 ```
 
 ---
 
-##  Repository Structure
+## 📂 Repository Structure
 
 ```
-1_preprocessing_10X_galaxy/
-├── DropletUtils Plot on dataset 14-16].png
-├── DropletUtils _RNA star.zip
-├── MultiQC on dataset 13_ Stats].tabular
-├── RNA STARSolo on dataset 1-6_ Matrix Gene Counts raw].mtx
-├── RNA STARSolo on dataset 1-6_ log].txt
-
-2_scanpy_analysis/
-├── visuals/
-│       ├── dot_plot.png
-│       ├── pca_samples.png
-│       ├── pca_variance_ratio.png
-│       ├── scatter_plot.png
-│       ├── umap.png
-│       ├── umap_4.png
-├── scrna (1).ipynb
-
-3_AnnData/
-├── visuals/
-│       ├── cpm_vs_raw_counts.png
-│       ├── distance_matrix_raw.png
-│       ├── embeddings_plot.png
-│       ├── sorted heatmap.png
-├── Getting_started_with_anndata .ipynb
-├── Getting_started_with_the_anndata_package.ipynb
-├── README.md
-├──Requirments.txt
+single-cell-rnaseq-pipeline/
+│
+├── 1_preprocessing_10X_galaxy/               # Stage 1: Raw data → Count matrix
+│   ├── DropletUtils Plot on dataset 14-16].png    # Cell/empty droplet barcode plot
+│   ├── DropletUtils _RNA star.zip                 # DropletUtils output archive
+│   ├── MultiQC on dataset 13_ Stats].tabular      # MultiQC statistics table
+│   ├── RNA STARSolo on dataset 1-6_ Matrix Gene Counts raw].mtx  # Raw count matrix
+│   └── RNA STARSolo on dataset 1-6_ log].txt      # STARsolo alignment log
+│
+├── 2_scanpy_analysis/                        # Stage 2: Downstream Python analysis
+│   ├── visuals/                              # All generated plots
+│   │   ├── scatter_plot.png                  # Cell QC scatter (nGenes vs nCounts)
+│   │   ├── pca_samples.png                   # PCA projection of cells
+│   │   ├── pca_variance_ratio.png            # Explained variance per PC
+│   │   ├── umap.png                          # UMAP embedding (basic)
+│   │   ├── umap_4.png                        # UMAP with Leiden clusters labeled
+│   │   └── dot_plot.png                      # Marker gene dot plot by cluster
+│   └── scrna (1).ipynb                       # Full Scanpy analysis notebook
+│
+├── 3_AnnData/                                # Stage 3: AnnData structure & annotation
+│   ├── visuals/
+│   │   ├── cpm_vs_raw_counts.png             # Raw vs normalized expression comparison
+│   │   ├── distance_matrix_raw.png           # Pairwise cell distance matrix
+│   │   ├── embeddings_plot.png               # Dimensionality reduction embeddings
+│   │   └── sorted heatmap.png                # Sorted gene expression heatmap
+│   ├── Getting_started_with_anndata .ipynb   # AnnData basics notebook
+│   └── Getting_started_with_the_anndata_package.ipynb  # Extended AnnData tutorial
+│
+├── README.md                                 # ← You are here
+└── requirements.txt                          # Python dependencies
 ```
 
 ---
 
-## Stage 1 — Upstream Preprocessing (Galaxy)
+##  Stage Summaries
 
-**Platform:** Galaxy Training Network (GTN)
-**Objective:** Transform raw sequencing reads into a structured gene-cell count matrix
+### Stage 1 — Preprocessing (Galaxy)
+📁 [`1_preprocessing_10X_galaxy/`](1_preprocessing_10X_galaxy/README.md)
 
-### Methodology
+Raw paired-end FASTQ files from the 10X Genomics Chromium platform are processed through a Galaxy-based workflow:
 
-* Input: Paired-end FASTQ files
+- **STARsolo** aligns reads, extracts cell barcodes and UMIs, and generates a raw gene-cell count matrix in `.mtx` format
+- **DropletUtils** uses the barcode rank distribution (knee plot) to distinguish true cells from empty droplets
+- **MultiQC** aggregates quality metrics including mapping rate, read duplication, and sequencing depth
 
-  * **R1** → cell barcodes + UMIs
-  * **R2** → transcript sequences
+**Input:** Paired FASTQ (R1 = barcode+UMI, R2 = cDNA)  
+**Output:** Sparse count matrix (`.mtx`), barcode/gene lists, `.h5ad` AnnData object
 
-* Alignment performed using **STARsolo**, a widely used alternative to Cell Ranger
-
-* Key operations:
-
-  * Barcode identification and filtering
-  * UMI deduplication
-  * Gene-level quantification
-
-* Quality control performed using **MultiQC**, evaluating:
-
-  * Mapping efficiency
-  * Number of detected cell barcodes
-  * Filtering thresholds
-
-* Output converted into **AnnData (`.h5ad`) format**, enabling compatibility with Scanpy
-
-### Output Artifacts
-
-* Gene-cell count matrix
-* Barcode and feature annotations
-* `.h5ad` file for downstream analysis
+📄 [→ Detailed Preprocessing README](1_preprocessing_10X_galaxy/README.md)
 
 ---
 
-##  Stage 2 — Downstream Analysis (Scanpy)
+### Stage 2 — Scanpy Analysis (Python)
+📁 [`2_scanpy_analysis/`](2_scanpy_analysis/README.md)
 
-**Notebook:** `basic-scrna-tutorial.ipynb`
+The count matrix is loaded into **Scanpy** for a full analytical workflow in a Jupyter notebook:
 
-This stage performs the **core statistical and computational analysis** of scRNA-seq data.
+- **Cell-level QC:** Filter cells by number of expressed genes, total counts, and mitochondrial gene fraction
+- **Normalization:** Library-size normalization to 10,000 counts per cell, followed by log1p transformation
+- **Feature selection:** Identification of highly variable genes (HVGs) for downstream analysis
+- **PCA:** Linear dimensionality reduction capturing major axes of variation
+- **UMAP:** Nonlinear 2D projection for visualization of cell relationships
+- **Leiden clustering:** Graph-based community detection to define cell clusters
+- **Marker gene analysis:** Identification of differentially expressed genes per cluster using rank_genes_groups
 
-### Analytical Pipeline
+**Input:** Raw `.mtx` or `.h5ad`  
+**Output:** Clustered `.h5ad`, UMAP plots, marker gene tables
 
-#### 🔹 Quality Control (QC)
-
-* Computation of per-cell metrics:
-
-  * Number of detected genes (`n_genes_by_counts`)
-  * Total counts (`total_counts`)
-  * Mitochondrial gene percentage (`pct_counts_mt`)
-* Removal of:
-
-  * Low-quality cells
-  * Rarely expressed genes
-
-#### 🔹 Normalization
-
-* Library size normalization to equalize sequencing depth
-* Logarithmic transformation for variance stabilization
-
-#### 🔹 Feature Selection
-
-* Identification of **Highly Variable Genes (HVGs)**
-* Focus on biologically informative genes
-
-#### 🔹 Dimensionality Reduction
-
-* Principal Component Analysis (PCA)
-* Selection of informative components
-
-#### 🔹 Graph Construction
-
-* k-nearest neighbor (kNN) graph
-* Captures cell-to-cell similarity structure
-
-#### 🔹 Clustering & Visualization
-
-* UMAP for nonlinear embedding
-* Leiden algorithm for community detection
-
-#### 🔹 Marker Gene Identification
-
-* Statistical testing (e.g., Wilcoxon rank-sum)
-* Identification of cluster-specific gene signatures
-
-### Outputs
-
-* Processed AnnData object
-* Low-dimensional embeddings (UMAP)
-* Cluster assignments and marker genes
+ [→ Detailed Scanpy README](2_scanpy_analysis/README.md)
 
 ---
 
-##  Stage 3 — AnnData Exploration & Data Handling
+### Stage 3 — AnnData Exploration
+ [`3_AnnData/`](3_AnnData/README.md)
 
-**Notebooks:**
+Explores the **AnnData** data structure that underpins the entire scverse ecosystem:
 
-* `anndata1.ipynb`
-* `anndata2.ipynb`
+- Understanding `.X`, `.obs`, `.var`, `.obsm`, `.layers`, and `.uns` slots
+- Subsetting cells and genes; views vs. copies
+- Adding and manipulating metadata (`.obs`, `.var`)
+- Storing and accessing dimensionality reduction embeddings (`.obsm`)
+- Visualizing raw vs. normalized expression, distance matrices, and sorted heatmaps
+- Manual cell type annotation by mapping cluster IDs to biological labels
 
-This stage focuses on **deep understanding and manipulation of the AnnData structure**, which underpins modern single-cell analysis workflows.
+**Input:** AnnData objects from Stage 2  
+**Output:** Fully annotated `.h5ad` files ready for publication-quality analysis
 
-### Core Concepts
-
-#### 🔹 Data Structure
-
-* `.X` → expression matrix
-* `.obs` → cell-level metadata
-* `.var` → gene-level metadata
-* `.obsm` → embeddings (e.g., PCA, UMAP)
-* `.layers` → alternative data representations
-
-#### 🔹 Data Manipulation
-
-* Subsetting cells and genes
-* Adding annotations (e.g., cell types)
-* Working with categorical variables for efficiency
-
-#### 🔹 Advanced Features
-
-* Sparse matrix optimization
-* Backed mode for memory-efficient file handling
-* View vs copy behavior in slicing operations
-
-#### 🔹 File Operations
-
-* Reading and writing `.h5ad` files
-* Managing large-scale datasets
-
-### Outputs
-
-* Structured and annotated AnnData objects
-* Demonstrations of efficient data handling practices
+ [→ Detailed AnnData README](3_AnnData/README.md)
 
 ---
 
-##  Skills & Concepts Demonstrated
+## Key Visual Outputs
 
-* End-to-end scRNA-seq workflow design
-* Preprocessing of 10x Genomics data
-* Statistical analysis and clustering of single-cell data
-* Dimensionality reduction and visualization techniques
-* Efficient handling of high-dimensional biological datasets
-* Practical understanding of AnnData data model
+### UMAP Cluster Visualization
+> Cells projected into 2D space; each color represents a distinct Leiden cluster
+
+![UMAP](2_scanpy_analysis/visuals/umap_4.png)
 
 ---
 
-##  Environment Setup
+### Marker Gene Dot Plot
+> Expression level (dot size = % cells expressing; color = mean expression) of top marker genes per cluster
+
+![Dot Plot](2_scanpy_analysis/visuals/dot_plot.png)
+
+---
+
+### PCA Variance Ratio
+> Proportion of total variance explained by each principal component — guides PC selection
+
+![PCA Variance](2_scanpy_analysis/visuals/pca_variance_ratio.png)
+
+---
+
+### Barcode Rank Plot (DropletUtils)
+> Knee plot distinguishing true cells (high UMI counts) from empty droplets (low UMI counts)
+
+![Droplet Plot](1_preprocessing_10X_galaxy/DropletUtils%20Plot%20on%20dataset%2014-16].png)
+
+---
+
+### Sorted Gene Expression Heatmap
+> Hierarchically sorted expression matrix revealing transcriptional programs across clusters
+
+![Heatmap](3_AnnData/visuals/sorted%20heatmap.png)
+
+---
+
+## 🛠️ Environment Setup
+
+### Prerequisites
+
+- Python ≥ 3.8
+- pip or conda
+
+### Installation
 
 ```bash
-pip install scanpy anndata numpy pandas matplotlib scipy
+# Clone the repository
+git clone https://github.com/SyedaMomina7/single-cell-rnaseq-pipeline.git
+cd single-cell-rnaseq-pipeline
+
+# Install required Python packages
+pip install -r requirements.txt
+```
+
+### `requirements.txt`
+
+```
+scanpy>=1.9.0
+anndata>=0.9.0
+numpy>=1.23.0
+pandas>=1.5.0
+matplotlib>=3.6.0
+scipy>=1.9.0
+seaborn>=0.12.0
+leidenalg>=0.9.0
+python-igraph>=0.10.0
+umap-learn>=0.5.3
 ```
 
 ---
 
-##  Reproducibility & Execution
+## How to Run
 
-1. Perform preprocessing using Galaxy (external platform)
-2. Execute analysis notebook:
+### Step 1 — Preprocessing (Galaxy)
 
-   ```
-   basic-scrna-tutorial.ipynb
-   ```
-3. Run AnnData exploration notebooks:
+1. Log into [usegalaxy.org](https://usegalaxy.org)
+2. Upload your paired FASTQ files (R1 + R2)
+3. Run **RNA STARsolo** with 10X Chromium v3 parameters
+4. Run **DropletUtils** on the STARsolo output
+5. Run **MultiQC** for sequencing QC summary
+6. Export the `.mtx` matrix and `.h5ad` file
 
-   ```
-   anndata1.ipynb
-   anndata2.ipynb
-   ```
+### Step 2 — Scanpy Analysis
+
+```bash
+cd 2_scanpy_analysis
+jupyter notebook "scrna (1).ipynb"
+```
+
+Execute cells in order. Outputs (plots + `.h5ad`) are saved to `visuals/`.
+
+### Step 3 — AnnData Exploration
+
+```bash
+cd 3_AnnData
+jupyter notebook Getting_started_with_the_anndata_package.ipynb
+```
+
+---
+
+##  Reproducibility & Best Practices
+
+This pipeline is designed with reproducibility as a first-class concern:
+
+| Practice | Implementation |
+|----------|---------------|
+| **Fixed random seeds** | `random_state=42` in PCA, UMAP, and clustering |
+| **Version pinning** | All dependencies pinned in `requirements.txt` |
+| **Modular notebooks** | Each stage is a self-contained, well-documented notebook |
+| **Galaxy workflow export** | GTN workflows are exportable as `.ga` JSON for exact replication |
+| **Intermediate saves** | AnnData objects are saved as `.h5ad` after each major stage |
+| **Inline documentation** | Every analysis step includes biological interpretation |
 
 ---
 
 ##  References
 
-* Galaxy Training Network — scRNA-seq preprocessing
-* Scanpy documentation (scverse)
-* AnnData documentation
-* scverse tutorials and best practices
+- [Galaxy Training Network (GTN)](https://training.galaxyproject.org/training-material/topics/single-cell/)
+- [Scanpy Documentation](https://scanpy.readthedocs.io/)
+- [AnnData Documentation](https://anndata.readthedocs.io/)
 
 ---
 
 ## 👩‍💻 Author
 
-**Syeda Momina**
-
----
-
-##  Remarks
-
-* This project demonstrates a **hybrid analytical workflow**, integrating graphical and programmatic tools.
-* The separation into stages ensures **modularity, clarity, and reproducibility**.
-* The implementation reflects **standard practices in modern single-cell transcriptomics analysis**.
+**Syeda Momina**  
+GitHub: [@SyedaMomina7](https://github.com/SyedaMomina7)
 
 ---
